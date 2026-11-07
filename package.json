@@ -10,16 +10,15 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "import:cs-tutor": "node scripts/import-cs-tutor.ts"
+    "import:cs-tutor": "node scripts/import-cs-tutor.ts",
+    "bridge": "node public/bridge/tail-cards-bridge.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.6.0",
     "dexie": "^4.4.7",
     "mermaid": "^12.3.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "ts-fsrs": "^6.0.0",
-    "zod": "^4.6.7"
+    "ts-fsrs": "^6.0.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { Card, Chapter, Deck, DeckBundle } from '../core/model.ts';
 import type { SrsState } from '../core/srs.ts';
+import { parseChapterMd } from '../core/parse-card-md.ts';
 
 export interface ReviewLog {
   id?: number;
@@ -71,6 +72,35 @@ export async function loadBundle(deckId: string): Promise<DeckBundle | undefined
     return ca - cb || a.order - b.order;
   });
   return { format: 'tail-cards/deck@1', deck, chapters, cards };
+}
+
+/** 카드형 .md 파일들을 기존 덱에 챕터로 추가 (같은 파일명 챕터는 교체, 학습 기록은 카드 ID로 유지) */
+export async function addChaptersToDeck(deckId: string, files: { fileName: string; md: string }[]) {
+  const b = await loadBundle(deckId);
+  if (!b) throw new Error('덱을 찾을 수 없습니다');
+  let chapters = [...b.chapters];
+  let cards = [...b.cards];
+  const added: { chapterId: string; cards: number }[] = [];
+  for (const f of files) {
+    const order = chapters.find((c) => c.fileName === f.fileName)?.order ?? chapters.length;
+    const { chapter, cards: cs } = parseChapterMd(f.md, { deckId, fileName: f.fileName, order });
+    if (!cs.length) continue;
+    const others = cards.filter((c) => c.chapterId !== chapter.id);
+    const taken = new Set(others.map((c) => c.id));
+    const rename = new Map<string, string>();
+    for (const c of cs) {
+      if (taken.has(c.id)) {
+        rename.set(c.id, `${chapter.id}-${c.id}`);
+        c.id = `${chapter.id}-${c.id}`;
+      }
+    }
+    chapter.blocks = chapter.blocks.map((bl) => (bl.type === 'card' && rename.has(bl.cardId) ? { ...bl, cardId: rename.get(bl.cardId)! } : bl));
+    chapters = [...chapters.filter((c) => c.id !== chapter.id), chapter].sort((x, y) => x.order - y.order);
+    cards = [...others, ...cs];
+    added.push({ chapterId: chapter.id, cards: cs.length });
+  }
+  await saveBundle({ ...b, chapters, cards });
+  return added;
 }
 
 export async function deleteDeck(deckId: string) {

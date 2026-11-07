@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { seedBuiltInDecks } from './db/db.ts';
 import { ChapterView } from './ui/ChapterView.tsx';
 
-// AI 생성 화면은 Anthropic SDK를 포함하므로 필요할 때만 불러온다
+// 카드 만들기 화면은 필요할 때만 불러온다
 const Generate = lazy(() => import('./ui/Generate.tsx').then((m) => ({ default: m.Generate })));
 import { Home } from './ui/Home.tsx';
 import { href, useRoute } from './ui/route.ts';
@@ -39,7 +39,7 @@ export function App() {
   else if (page === 'generate')
     body = (
       <Suspense fallback={<p className="muted">불러오는 중…</p>}>
-        <Generate />
+        <Generate query={route.query} />
       </Suspense>
     );
   else if (page === 'settings') body = <Settings />;
